@@ -115,8 +115,47 @@ The OpenAI client (`AZURE_OPENAI_API_KEY`) is separate — it's used for the Res
 
 ---
 
+## Running Evaluations & Tests
+
+The harness uses [promptfoo](https://github.com/promptfoo/promptfoo) for end-to-end evaluation, verification, and safety (red-team) testing of the agent.
+
+For a detailed explanation of the tests, refer to [Agent Testing with Promptfoo](file:///Users/immanuelnowpert/Personal/azure-ai-foundry/tests/README.md).
+
+### 1. Install Promptfoo
+Ensure you have Node.js (≥ 18) installed, then install the Promptfoo CLI globally:
+```bash
+npm install -g promptfoo
+```
+
+### 2. Run Evaluations
+The test suites expect your `.env` variables to be fully configured. Ensure the local MCP server is running if testing tool-use cases.
+
+```bash
+# Run all evaluation suites (smoke, skills, tool_use, multi_turn)
+npx promptfoo eval -c tests/promptfoo.yaml
+
+# Run a single suite (e.g. smoke tests)
+npx promptfoo eval -c tests/suites/smoke.yaml
+```
+
+### 3. View Results in Browser
+After running an evaluation, open the interactive web viewer to review agent responses, assertions, and metrics:
+```bash
+npx promptfoo view
+```
+
+### 4. Run Red-Teaming (Safety Probing)
+To probe the agent for safety, alignment, and jailbreak vulnerabilities:
+```bash
+npx promptfoo redteam run -c tests/suites/redteam.yaml
+```
+
+---
+
 ## Next steps
 
 - [Deployment guide](deployment.md) — sync skills, create toolbox, redeploy agent
 - [Observability guide](observability.md) — configure OTEL collector, understand traces and logs
 - [Architecture](architecture.md) — how the components fit together
+- [Agent Testing Guide](file:///Users/immanuelnowpert/Personal/azure-ai-foundry/tests/README.md) — comprehensive testing docs
+
