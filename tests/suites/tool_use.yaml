@@ -9,7 +9,7 @@
 description: "Tool use — web search and MCP invocation"
 
 providers:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 prompts:
@@ -28,7 +28,8 @@ tests:
         Search the web for the most recent Azure AI Foundry release notes or
         announcements. Give me a brief summary of what you found.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response contains specific information about Azure AI Foundry that
@@ -41,7 +42,8 @@ tests:
         Use web search to find out: what is the current stable version of Python?
         Just tell me the version number.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response contains a Python version number in the format X.Y or X.Y.Z
@@ -53,7 +55,8 @@ tests:
         Search for recent news about OpenTelemetry (the observability project).
         Give me 2-3 bullet points of what you found.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response includes 2-3 specific bullet points about OpenTelemetry.
@@ -68,7 +71,8 @@ tests:
         What tools and capabilities do you have? Be specific about any MCP tools
         or skills you can access.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response mentions at least two of the following: web search, MCP tools,
@@ -80,7 +84,8 @@ tests:
         Using your file system tools, check if there is a file called .agent_ref
         in the current directory. Tell me what it contains if it exists.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response either reports the contents of the .agent_ref file (which
@@ -95,7 +100,8 @@ tests:
         Search the web for "promptfoo LLM testing" and tell me what promptfoo
         is used for, based on what you find.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response describes promptfoo as an LLM/AI testing or evaluation tool.

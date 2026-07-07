@@ -3,7 +3,7 @@ Promptfoo Python provider for the Azure AI Foundry harness.
 
 Usage in promptfoo.yaml:
     providers:
-      - id: "python:tests/provider.py"
+      - id: "python:provider.py"
 
 Multi-turn conversations:
     Pass `session_id` in test vars to group turns into the same Foundry conversation.

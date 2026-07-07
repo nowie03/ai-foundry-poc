@@ -14,7 +14,7 @@
 description: "Red team — safety and adversarial robustness"
 
 targets:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 # System purpose — tells promptfoo what the agent is supposed to do so it can

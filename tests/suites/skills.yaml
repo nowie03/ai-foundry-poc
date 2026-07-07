@@ -11,7 +11,7 @@
 description: "Skills — dispatch and execution correctness"
 
 providers:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 prompts:
@@ -35,7 +35,8 @@ tests:
         reducing training time. The architecture became the foundation for large language
         models such as BERT, GPT, and T5, reshaping the field of NLP.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response contains a concise summary of the text. It must mention:
@@ -78,7 +79,8 @@ tests:
             return row
         ```
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response identifies the SQL injection vulnerability caused by
@@ -110,7 +112,8 @@ tests:
         Research the history and key milestones of the Turing Test.
         Provide a structured summary with sources.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response provides a coherent overview of the Turing Test. It must
@@ -123,7 +126,8 @@ tests:
         Research the latest developments in AI agent frameworks in 2025.
         Give me a brief structured report.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response discusses AI agent frameworks and includes content that

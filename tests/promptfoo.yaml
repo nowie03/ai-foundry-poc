@@ -1,9 +1,12 @@
-# Promptfoo root configuration
-# Run all evaluation suites (smoke, skills, tool_use, multi_turn)
+# Promptfoo root configuration — shared settings (env, timeout, concurrency, output path).
+# promptfoo has no config-level "import" field, so combining this with the suite files
+# happens at the CLI via multiple -c flags — promptfoo's combineConfigs() merges
+# providers/prompts/tests/defaultTest/env/outputPath across all configs passed this way.
 #
 # Usage:
-#   npx promptfoo eval                          # run all suites
-#   npx promptfoo eval -c tests/promptfoo.yaml  # explicit path
+#   npx promptfoo eval -c tests/promptfoo.yaml \
+#     -c tests/suites/smoke.yaml -c tests/suites/skills.yaml \
+#     -c tests/suites/tool_use.yaml -c tests/suites/multi_turn.yaml
 #   npx promptfoo view                          # open results in browser
 #
 # Red team is a separate command (it has its own config):
@@ -11,8 +14,11 @@
 
 description: "Foundry Harness Agent — Full Eval"
 
+env:
+  PROMPTFOO_PYTHON: "/Users/immanuelnowpert/Personal/azure-ai-foundry/.venv/bin/python"
+
 providers:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 # Pass-through prompt — each suite's test vars supply the actual message.
@@ -27,12 +33,5 @@ defaultTest:
 # Raise to ~3 for faster smoke/skills runs once multi-turn is proven stable.
 maxConcurrency: 1
 
-# Import all suites. Each file adds its own tests to the run.
-import:
-  - tests/suites/smoke.yaml
-  - tests/suites/skills.yaml
-  - tests/suites/tool_use.yaml
-  - tests/suites/multi_turn.yaml
-
 # Write results to a file for CI consumption
-outputPath: tests/results/latest.json
+outputPath: results/latest.json

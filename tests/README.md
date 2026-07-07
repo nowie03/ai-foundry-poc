@@ -16,7 +16,7 @@ npm install -g promptfoo
 
 ```
 tests/
-├── promptfoo.yaml          # Root config — runs smoke + skills + tool_use + multi_turn
+├── promptfoo.yaml          # Shared settings (env, timeout, concurrency, output path) — combine with suite files via multiple -c flags
 ├── provider.py             # Python provider shim wrapping AgentRunner
 ├── suites/
 │   ├── smoke.yaml          # Basic connectivity & sanity (4 tests)
@@ -35,15 +35,32 @@ tests/
 ### Full eval (all suites)
 ```bash
 cd /path/to/azure-ai-foundry
-npx promptfoo eval -c tests/promptfoo.yaml
+npx promptfoo eval \
+  -c tests/promptfoo.yaml \
+  -c tests/suites/smoke.yaml \
+  -c tests/suites/skills.yaml \
+  -c tests/suites/tool_use.yaml \
+  -c tests/suites/multi_turn.yaml
 ```
 
+> promptfoo has no config-level way to "import" other config files from within a YAML file.
+> Passing multiple `-c` flags is the supported mechanism — promptfoo merges their
+> `providers`/`prompts`/`tests`/`defaultTest`/`env`/`outputPath` across all of them.
+> Running `-c tests/promptfoo.yaml` alone produces a single test case with no `message` var
+> (since that file declares no `tests:` of its own), which fails with a "missing input" error.
+
 ### Single suite
+
+Always pass `tests/promptfoo.yaml` first. promptfoo resolves every relative path (including
+each suite's `python:provider.py` provider) against the directory of the *first* `-c` file only
+— not each file's own directory — so `tests/promptfoo.yaml` must lead every command to keep
+that base path pinned to `tests/`.
+
 ```bash
-npx promptfoo eval -c tests/suites/smoke.yaml
-npx promptfoo eval -c tests/suites/skills.yaml
-npx promptfoo eval -c tests/suites/tool_use.yaml
-npx promptfoo eval -c tests/suites/multi_turn.yaml
+npx promptfoo eval -c tests/promptfoo.yaml -c tests/suites/smoke.yaml
+npx promptfoo eval -c tests/promptfoo.yaml -c tests/suites/skills.yaml
+npx promptfoo eval -c tests/promptfoo.yaml -c tests/suites/tool_use.yaml
+npx promptfoo eval -c tests/promptfoo.yaml -c tests/suites/multi_turn.yaml
 ```
 
 ### Open results in browser
@@ -53,7 +70,7 @@ npx promptfoo view
 
 ### Red team (separate command, hits live agent)
 ```bash
-npx promptfoo redteam run -c tests/suites/redteam.yaml
+npx promptfoo redteam run -c tests/promptfoo.yaml -c tests/suites/redteam.yaml
 ```
 
 > ⚠️ The red team run generates adversarial prompts via promptfoo's plugin system and sends them to the live Foundry agent. Each plugin generates 5–10 probes. `maxConcurrency: 1` is set to keep token usage predictable.
@@ -90,10 +107,10 @@ Because promptfoo runs tests sequentially (`maxConcurrency: 1`), the turns execu
 
 | Type | What it checks |
 |---|---|
-| `not-empty` | Response is non-blank |
+| `javascript` (`output.trim().length > 0`) | Response is non-blank — promptfoo has no built-in `not-empty` type |
 | `contains` | Literal substring present |
-| `not-contains` | Literal substring absent |
-| `equals` | Exact match |
+| `not-contains` | Literal substring absent (inverse of `contains`) |
+| `equals` / `not-equals` | Exact match / its inverse |
 | `javascript` | Custom JS expression on `output` |
 | `llm-rubric` | LLM judge evaluates the response against a rubric |
 
@@ -106,5 +123,5 @@ Because promptfoo runs tests sequentially (`maxConcurrency: 1`), the turns execu
 ## Adding New Tests
 
 1. Add cases to an existing suite YAML, or create a new `tests/suites/<name>.yaml`.
-2. For new suites, add the path to the `import:` list in `promptfoo.yaml`.
+2. For new suites, add the path as another `-c` flag to the "Full eval" command above.
 3. Use `llm-rubric` for open-ended responses and `contains` / `equals` for deterministic ones.

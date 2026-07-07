@@ -5,7 +5,7 @@
 description: "Smoke — basic connectivity and sanity"
 
 providers:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 prompts:
@@ -20,7 +20,8 @@ tests:
     vars:
       message: "Hello, are you there? Reply with a single sentence."
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: javascript
         value: "output.length < 2000"  # sanity: not a runaway response
 
@@ -28,7 +29,8 @@ tests:
     vars:
       message: "List the tools and capabilities you have available."
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: "The response mentions at least one of: web search, MCP, skills, file system, or shell tools"
 

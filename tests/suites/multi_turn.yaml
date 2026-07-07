@@ -17,7 +17,7 @@
 description: "Multi-turn — conversation context and memory"
 
 providers:
-  - id: "python:tests/provider.py"
+  - id: "python:provider.py"
     label: "foundry-agent"
 
 prompts:
@@ -67,7 +67,8 @@ tests:
       session_id: "clarification-test"
       message: "I want to write a function."
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response either asks for clarification about what kind of function,
@@ -81,7 +82,8 @@ tests:
         It should be a Python function that takes a list of integers and returns
         the top 3 largest values.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response provides a Python function that accepts a list of integers
@@ -99,7 +101,8 @@ tests:
         I want to refactor my code. Let's start with step 1:
         explain what 'separation of concerns' means in software design.
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response explains "separation of concerns" clearly in the context
@@ -114,7 +117,8 @@ tests:
         specific changes would you recommend for a Python Flask app that
         has all its database queries in the route handlers?
     assert:
-      - type: not-empty
+      - type: javascript
+        value: "output.trim().length > 0"
       - type: llm-rubric
         value: >
           The response builds on the concept of separation of concerns
