@@ -1,0 +1,123 @@
+# Suite 4: Multi-Turn Conversation Tests
+# Verify the agent correctly maintains context across conversation turns.
+#
+# How multi-turn works here:
+#   The provider (tests/provider.py) maintains a _sessions dict keyed by
+#   `session_id` var.  Tests with the SAME session_id share a Foundry
+#   conversation_id, so the agent sees the full message history.
+#
+#   Naming convention: session_id = "<scenario>-<turn-number>"
+#   But since the provider keys on session_id, each DISTINCT session_id string
+#   starts a fresh conversation.  Use the same session_id across turns.
+#
+# IMPORTANT: promptfoo runs tests in parallel by default.
+# Set `maxConcurrency: 1` in the root config to ensure ordered sequential execution
+# within a session.  Sessions with different session_ids are independent.
+
+description: "Multi-turn — conversation context and memory"
+
+providers:
+  - id: "python:tests/provider.py"
+    label: "foundry-agent"
+
+prompts:
+  - "{{message}}"
+
+defaultTest:
+  options:
+    timeout: 90000
+
+tests:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Scenario A: Basic memory — remember a user-stated fact
+  # session_id "memory-test" is shared across both turns so they go to the
+  # same Foundry conversation.
+  # ─────────────────────────────────────────────────────────────────────────
+
+  - description: "Multi-turn A1 — introduce a fact"
+    vars:
+      session_id: "memory-test"
+      message: >
+        My project is called "Project Helios" and it is written in Python.
+        Please confirm you have noted this.
+    assert:
+      - type: llm-rubric
+        value: >
+          The response acknowledges the project name "Project Helios" and/or
+          notes that the project is written in Python.
+
+  - description: "Multi-turn A2 — recall the stated fact"
+    vars:
+      session_id: "memory-test"
+      message: "What is the name of my project and what language is it written in?"
+    assert:
+      - type: contains
+        value: "Helios"
+      - type: llm-rubric
+        value: >
+          The response correctly recalls that the project is called "Project Helios"
+          and that it is written in Python. It should NOT say it doesn't know.
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Scenario B: Clarification across turns — agent refines its answer
+  # ─────────────────────────────────────────────────────────────────────────
+
+  - description: "Multi-turn B1 — vague initial request"
+    vars:
+      session_id: "clarification-test"
+      message: "I want to write a function."
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response either asks for clarification about what kind of function,
+          or provides a generic starter. It does not produce a complete specific
+          implementation without more context.
+
+  - description: "Multi-turn B2 — provide clarification"
+    vars:
+      session_id: "clarification-test"
+      message: >
+        It should be a Python function that takes a list of integers and returns
+        the top 3 largest values.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response provides a Python function that accepts a list of integers
+          and returns (or prints) the top 3 largest values. The code should be
+          syntactically valid Python.
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Scenario C: Task continuation — step-by-step task across turns
+  # ─────────────────────────────────────────────────────────────────────────
+
+  - description: "Multi-turn C1 — start a task"
+    vars:
+      session_id: "stepwise-test"
+      message: >
+        I want to refactor my code. Let's start with step 1:
+        explain what 'separation of concerns' means in software design.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response explains "separation of concerns" clearly in the context
+          of software design. It should mention that different responsibilities
+          or functionalities should be handled by distinct modules or components.
+
+  - description: "Multi-turn C2 — continue the task, reference previous step"
+    vars:
+      session_id: "stepwise-test"
+      message: >
+        Good. Now step 2: based on the principle you just described, what
+        specific changes would you recommend for a Python Flask app that
+        has all its database queries in the route handlers?
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response builds on the concept of separation of concerns
+          (from the previous turn) and applies it to the Flask scenario.
+          It should recommend extracting database logic into a separate
+          service layer, repository, or model class.

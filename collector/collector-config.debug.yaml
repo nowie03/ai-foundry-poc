@@ -1,0 +1,37 @@
+# collector-config.debug.yaml
+# ----------------------------
+# Minimal config for Milestone 1 local testing only.
+# Receives OTLP spans/logs and dumps them to stdout so you can verify
+# the Python app is actually sending telemetry.
+#
+# Usage:
+#   docker run -d --rm -p 4317:4317 -p 4318:4318 --name otel-debug \
+#     -v $(pwd)/collector/collector-config.debug.yaml:/etc/otelcol/config.yaml \
+#     otel/opentelemetry-collector-contrib:latest
+#   docker logs -f otel-debug
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch: {}
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]

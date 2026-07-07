@@ -1,0 +1,131 @@
+# Suite 2: Skill Dispatch Tests
+# Verify the agent selects and correctly executes each of the three skills:
+#   - summarize  (concise summary of provided text)
+#   - code-review (bug/security analysis of code)
+#   - research    (web search + synthesised report)
+#
+# The agent discovers skills via MCP resources on the toolbox endpoint.
+# Tests check that the right skill behaviour appears in the output,
+# not just that something was returned.
+
+description: "Skills — dispatch and execution correctness"
+
+providers:
+  - id: "python:tests/provider.py"
+    label: "foundry-agent"
+
+prompts:
+  - "{{message}}"
+
+defaultTest:
+  options:
+    timeout: 90000  # skill execution involves tool calls, allow more time
+
+tests:
+  # ── Summarize skill ───────────────────────────────────────────────────────
+
+  - description: "Summarize skill — short passage"
+    vars:
+      message: |
+        Summarize the following text for me:
+
+        The transformer architecture, introduced in the paper "Attention Is All You Need"
+        (Vaswani et al., 2017), replaced recurrent neural networks with self-attention
+        mechanisms. This allowed models to process sequences in parallel, dramatically
+        reducing training time. The architecture became the foundation for large language
+        models such as BERT, GPT, and T5, reshaping the field of NLP.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response contains a concise summary of the text. It must mention:
+          (1) transformers or the attention mechanism, (2) that it replaced RNNs
+          or enabled parallel processing, and (3) its impact on LLMs or NLP.
+          The response should be significantly shorter than the original.
+
+  - description: "Summarize skill — produces TL;DR style output"
+    vars:
+      message: |
+        Please summarize this for me:
+
+        Azure Container Apps is a fully managed serverless container service built on
+        Kubernetes. It enables developers to deploy microservices and containerized
+        applications without managing cluster infrastructure. It supports KEDA-based
+        autoscaling, Dapr integration, and ingress with automatic TLS. Applications
+        can scale to zero, making it cost-efficient for variable workloads.
+    assert:
+      - type: llm-rubric
+        value: >
+          The summary is concise (under 100 words). It mentions Container Apps,
+          and at least one of: serverless, Kubernetes, autoscaling, or scale-to-zero.
+
+  # ── Code-review skill ─────────────────────────────────────────────────────
+
+  - description: "Code-review skill — detects SQL injection"
+    vars:
+      message: |
+        Please review this Python code for bugs and security issues:
+
+        ```python
+        import sqlite3
+
+        def get_user(username: str):
+            conn = sqlite3.connect("users.db")
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM users WHERE username = '{username}'")
+            row = cur.fetchone()
+            conn.close()
+            return row
+        ```
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response identifies the SQL injection vulnerability caused by
+          directly interpolating the username into the query string. It should
+          recommend using parameterised queries or prepared statements.
+
+  - description: "Code-review skill — detects hardcoded secret"
+    vars:
+      message: |
+        Review this code snippet:
+
+        ```python
+        SECRET_KEY = "hardcoded-secret-12345"
+
+        def authenticate(token: str) -> bool:
+            return token == SECRET_KEY
+        ```
+    assert:
+      - type: llm-rubric
+        value: >
+          The response flags the hardcoded secret as a security issue and
+          recommends using environment variables or a secrets manager instead.
+
+  # ── Research skill ────────────────────────────────────────────────────────
+
+  - description: "Research skill — synthesises web search results"
+    vars:
+      message: >
+        Research the history and key milestones of the Turing Test.
+        Provide a structured summary with sources.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response provides a coherent overview of the Turing Test. It must
+          mention Alan Turing and the year 1950 (or "Computing Machinery and
+          Intelligence"). It should include at least one cited source or URL.
+
+  - description: "Research skill — recent topic requiring web search"
+    vars:
+      message: >
+        Research the latest developments in AI agent frameworks in 2025.
+        Give me a brief structured report.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response discusses AI agent frameworks and includes content that
+          is specific to 2025 developments (not generic historical information).
+          It should mention at least two frameworks or tools by name.

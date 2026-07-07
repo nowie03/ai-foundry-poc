@@ -1,0 +1,88 @@
+# collector-config.dev.yaml
+# --------------------------
+# Development environment OTel Collector pipeline.
+#
+# Differences from prod:
+#   - probabilistic_sampler: 100% (all spans kept)
+#   - debug exporter enabled  (verbose stdout logging)
+#   - Azure Monitor exporter present (optional — comment out if no dev App Insights)
+#
+# Authentication:
+#   Bearer token auth is enforced on all OTLP receivers.
+#   Set COLLECTOR_AUTH_TOKEN env var when running the container.
+#   Clients must send: Authorization: Bearer <token>
+#
+# Run locally:
+#   AZURE_APPINSIGHTS_CONNECTION_STRING="<dev-connection-string>" \
+#   COLLECTOR_AUTH_TOKEN="<your-secret-token>" \
+#   docker run -d --rm -p 4317:4317 -p 4318:4318 \
+#     -e AZURE_APPINSIGHTS_CONNECTION_STRING \
+#     -e COLLECTOR_AUTH_TOKEN \
+#     -v $(pwd)/collector/collector-config.dev.yaml:/etc/otelcol-contrib/config.yaml \
+#     --name otel-dev \
+#     otel/opentelemetry-collector-contrib:latest
+
+extensions:
+  # Bearer token auth: all incoming OTLP requests must carry:
+  #   Authorization: Bearer <COLLECTOR_AUTH_TOKEN>
+  # Token is injected via environment variable — never hardcoded.
+  bearertokenauth/server:
+    token: "${env:COLLECTOR_AUTH_TOKEN}"
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+        auth:
+          authenticator: bearertokenauth/server
+      http:
+        endpoint: "0.0.0.0:4318"
+        auth:
+          authenticator: bearertokenauth/server
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+  
+  # Attribute processor: stub for PII/prompt redaction.
+  # Add rules here to hash/redact sensitive span attributes before they leave the app boundary.
+  attributes:
+    actions:
+      # Example: hash raw prompt text (uncomment and expand as policy requires)
+      # - key: llm.input_messages
+      #   action: hash
+      - key: telemetry.sdk.version
+        action: upsert
+        value: "otel-contrib"
+
+  # Probabilistic sampler: 100% in dev (keep all spans)
+  probabilistic_sampler:
+    sampling_percentage: 100
+
+exporters:
+  # Debug exporter: verbose stdout — remove in prod
+  debug:
+    verbosity: detailed
+
+  # Azure Monitor exporter: connection string sourced from env var (never hardcoded)
+  azuremonitor:
+    connection_string: ${env:AZURE_APPINSIGHTS_CONNECTION_STRING}
+  
+  otlphttp/observe:
+    endpoint: "https://${env:OBSERVE_CUSTOMER_ID}.collect.observeinc.com/v2/otel"
+    headers:
+      Authorization: "Bearer ${env:OBSERVE_DATASTREAM_TOKEN}"
+  
+service:
+  extensions: [bearertokenauth/server]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, attributes, probabilistic_sampler]
+      exporters: [debug, azuremonitor, otlphttp/observe]
+    logs:
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [debug, azuremonitor, otlphttp/observe]

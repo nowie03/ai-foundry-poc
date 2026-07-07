@@ -1,0 +1,103 @@
+# Suite 3: Tool Use Tests
+# Verify that the agent actually invokes its tools (web search, MCP)
+# and incorporates the results into its responses.
+#
+# These tests use llm-rubric assertions to check that the output
+# reflects information that could only come from tool calls —
+# i.e., real-time or contextual data the model couldn't know from weights alone.
+
+description: "Tool use — web search and MCP invocation"
+
+providers:
+  - id: "python:tests/provider.py"
+    label: "foundry-agent"
+
+prompts:
+  - "{{message}}"
+
+defaultTest:
+  options:
+    timeout: 120000  # tool calls add significant latency
+
+tests:
+  # ── Web Search ────────────────────────────────────────────────────────────
+
+  - description: "Web search — current event lookup"
+    vars:
+      message: >
+        Search the web for the most recent Azure AI Foundry release notes or
+        announcements. Give me a brief summary of what you found.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response contains specific information about Azure AI Foundry that
+          appears to come from a web search (e.g. a date, version number, feature name,
+          or URL reference). The response must not be purely generic.
+
+  - description: "Web search — factual lookup with verifiable answer"
+    vars:
+      message: >
+        Use web search to find out: what is the current stable version of Python?
+        Just tell me the version number.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response contains a Python version number in the format X.Y or X.Y.Z
+          (e.g. 3.12, 3.13). It should be a plausible current stable version.
+
+  - description: "Web search — recent news topic"
+    vars:
+      message: >
+        Search for recent news about OpenTelemetry (the observability project).
+        Give me 2-3 bullet points of what you found.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response includes 2-3 specific bullet points about OpenTelemetry.
+          The content should be specific enough that it could only come from
+          a real web search (mention of version numbers, blog posts, or specific features).
+
+  # ── MCP / Toolbox ─────────────────────────────────────────────────────────
+
+  - description: "MCP — agent acknowledges available tools"
+    vars:
+      message: >
+        What tools and capabilities do you have? Be specific about any MCP tools
+        or skills you can access.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response mentions at least two of the following: web search, MCP tools,
+          skills (summarize/code-review/research), file system tools, or shell execution.
+
+  - description: "MCP — file read capability"
+    vars:
+      message: >
+        Using your file system tools, check if there is a file called .agent_ref
+        in the current directory. Tell me what it contains if it exists.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response either reports the contents of the .agent_ref file (which
+          contains an agent name:version string), or clearly states the file
+          was not found. It should not refuse to attempt the task.
+
+  # ── Tool result grounding ─────────────────────────────────────────────────
+
+  - description: "Grounding check — response incorporates tool output"
+    vars:
+      message: >
+        Search the web for "promptfoo LLM testing" and tell me what promptfoo
+        is used for, based on what you find.
+    assert:
+      - type: not-empty
+      - type: llm-rubric
+        value: >
+          The response describes promptfoo as an LLM/AI testing or evaluation tool.
+          The description should be specific and accurate, consistent with what
+          the promptfoo website describes.

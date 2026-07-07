@@ -1,0 +1,73 @@
+# collector-config.prod.yaml
+# ---------------------------
+# Production environment OTel Collector pipeline.
+#
+# Differences from dev:
+#   - probabilistic_sampler: 20% (cost control)
+#   - debug exporter ABSENT (no verbose logging in prod)
+#   - Azure Monitor exporter present with same env var key as dev
+#
+# Authentication:
+#   Bearer token auth is enforced on all OTLP receivers.
+#   Set COLLECTOR_AUTH_TOKEN env var when running the container.
+#   Clients must send: Authorization: Bearer <token>
+#
+# The PIPELINE SHAPE (receivers / processor types / exporter types) is identical
+# to collector-config.dev.yaml — only parameter values differ.
+# This is enforced by the Milestone 2 checkpoint script.
+
+extensions:
+  # Bearer token auth: all incoming OTLP requests must carry:
+  #   Authorization: Bearer <COLLECTOR_AUTH_TOKEN>
+  # Token is injected via environment variable — never hardcoded.
+  bearertokenauth/server:
+    token: "${env:COLLECTOR_AUTH_TOKEN}"
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+        auth:
+          authenticator: bearertokenauth/server
+      http:
+        endpoint: "0.0.0.0:4318"
+        auth:
+          authenticator: bearertokenauth/server
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  # Attribute processor: PII/prompt redaction rules.
+  # Expand with hashing rules for any sensitive span attributes before prod hardening.
+  attributes:
+    actions:
+      # Example: hash raw prompt text (uncomment and expand as policy requires)
+      # - key: llm.input_messages
+      #   action: hash
+      - key: telemetry.sdk.version
+        action: upsert
+        value: "otel-contrib"
+
+  # Probabilistic sampler: 20% in prod (adjust as cost/signal tradeoff requires)
+  probabilistic_sampler:
+    sampling_percentage: 20
+
+exporters:
+  # Azure Monitor exporter: same env var name as dev — value injected at deploy time
+  azuremonitor:
+    connection_string: ${env:AZURE_APPINSIGHTS_CONNECTION_STRING}
+
+service:
+  extensions: [bearertokenauth/server]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, attributes, probabilistic_sampler]
+      exporters: [azuremonitor]
+    logs:
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [azuremonitor]

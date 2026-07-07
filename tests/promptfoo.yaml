@@ -1,0 +1,38 @@
+# Promptfoo root configuration
+# Run all evaluation suites (smoke, skills, tool_use, multi_turn)
+#
+# Usage:
+#   npx promptfoo eval                          # run all suites
+#   npx promptfoo eval -c tests/promptfoo.yaml  # explicit path
+#   npx promptfoo view                          # open results in browser
+#
+# Red team is a separate command (it has its own config):
+#   npx promptfoo redteam run -c tests/suites/redteam.yaml
+
+description: "Foundry Harness Agent — Full Eval"
+
+providers:
+  - id: "python:tests/provider.py"
+    label: "foundry-agent"
+
+# Pass-through prompt — each suite's test vars supply the actual message.
+prompts:
+  - "{{message}}"
+
+defaultTest:
+  options:
+    timeout: 90000        # 90 s default; individual suites can override
+
+# Disable parallelism so multi-turn session ordering is deterministic.
+# Raise to ~3 for faster smoke/skills runs once multi-turn is proven stable.
+maxConcurrency: 1
+
+# Import all suites. Each file adds its own tests to the run.
+import:
+  - tests/suites/smoke.yaml
+  - tests/suites/skills.yaml
+  - tests/suites/tool_use.yaml
+  - tests/suites/multi_turn.yaml
+
+# Write results to a file for CI consumption
+outputPath: tests/results/latest.json
