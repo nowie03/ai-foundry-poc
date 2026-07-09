@@ -56,7 +56,7 @@ class MemoryStoreBuilder:
 
     def get_memory_search_tool(self) -> MemorySearchPreviewTool:
         tool = MemorySearchPreviewTool(
-            memory_store=self._name,
+            memory_store_name=self._name,
             scope=self.__get_user_name(),
             update_delay=5
         )
