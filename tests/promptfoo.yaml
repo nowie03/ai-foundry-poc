@@ -14,8 +14,10 @@
 
 description: "Foundry Harness Agent — Full Eval"
 
-env:
-  PROMPTFOO_PYTHON: "/Users/immanuelnowpert/Personal/azure-ai-foundry/.venv/bin/python"
+# No PROMPTFOO_PYTHON override here — promptfoo's config `env:` block takes
+# precedence over real process env vars for the same key, so a hardcoded path
+# here would break every other machine (including CI runners). If you need a
+# non-default interpreter, set PROMPTFOO_PYTHON in your own shell profile.
 
 providers:
   - id: "python:provider.py"

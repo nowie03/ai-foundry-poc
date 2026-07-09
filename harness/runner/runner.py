@@ -30,7 +30,7 @@ class AgentRunner:
         self._config = config or load_config()
         self._project: AIProjectClient = build_client(self._config)
         self._toolbox = ToolboxBuilder(self._project, self._config)
-        self._memory_store = MemoryStoreBuilder(self._config, f"{self._read_agent_name()}-memory-store")
+        self._memory_store = MemoryStoreBuilder(self._config, f"{self._config.agent_name}-memory-store")
 
 
     # ── deployment ────────────────────────────────────────────────────────────
@@ -41,18 +41,22 @@ class AgentRunner:
             "deploying agent: name=%r model=%s endpoint=%s",
             self._config.agent_name, self._config.model_deployment, self._config.endpoint,
         )
-        definition = PromptAgentDefinition(
-            model=self._config.model_deployment,
-            instructions=BASE_INSTRUCTIONS,
-            tools=[
-                self._memory_store.get_memory_search_tool(),
-                WebSearchTool(),
+        tools = [
+            self._memory_store.get_memory_search_tool(),
+            WebSearchTool(),
+        ]
+        if self._config.enable_local_tools:
+            tools.append(
                 MCPTool(
                     server_label="local-tools",
                     server_url=self._config.local_mcp_url,
                     require_approval="never",
-                ),
-            ],
+                )
+            )
+        definition = PromptAgentDefinition(
+            model=self._config.model_deployment,
+            instructions=BASE_INSTRUCTIONS,
+            tools=tools,
         )
         agent = self._project.agents.create_version(
             agent_name=self._config.agent_name,

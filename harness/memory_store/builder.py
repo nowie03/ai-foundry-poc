@@ -1,12 +1,11 @@
 import os
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import MemoryStoreDefaultDefinition, MemoryStoreDefaultOptions, MemorySearchPreviewTool
-# pyrefly: ignore [missing-import]
-from azure.identity import DefaultAzureCredential
 from dataclasses import dataclass
 import jwt
 import logging
 
+from ..auth import get_credential
 from ..config import HarnessConfig
 
 
@@ -27,7 +26,7 @@ class MemoryStoreBuilder:
         self._name = name
         self._client = AIProjectClient(
             endpoint=config.endpoint,
-            credential=DefaultAzureCredential(),
+            credential=get_credential(),
         )
         self._definition = MemoryStoreDefaultDefinition(
             chat_model=config.model_deployment,
@@ -64,7 +63,7 @@ class MemoryStoreBuilder:
         return tool
 
     def __get_user_name(self) -> str:
-        credential = DefaultAzureCredential()
+        credential = get_credential()
         token = credential.get_token("https://management.azure.com/.default")
         claims = jwt.decode(token.token, options={"verify_signature": False})
         logger.info(f"User name from the Token")

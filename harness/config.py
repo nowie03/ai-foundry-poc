@@ -25,6 +25,7 @@ class HarnessConfig:
     toolbox_name: str
     skills_dir: str
     local_mcp_url: str
+    enable_local_tools: bool = True
     api_key: str | None = None          # Azure OpenAI / AI Foundry API key (optional; falls back to DefaultAzureCredential)
     azure_openai_endpoint: str | None = None  # e.g. https://foundryagentdevkmmebr.openai.azure.com/
     api_version: str = "2024-12-01-preview"
@@ -63,6 +64,7 @@ def load_config() -> HarnessConfig:
         toolbox_name=os.environ.get("TOOLBOX_NAME", "harness-toolbox"),
         skills_dir=os.environ.get("SKILLS_DIR", "skills"),
         local_mcp_url=os.environ.get("LOCAL_MCP_URL", "http://127.0.0.1:8765"),
+        enable_local_tools=os.environ.get("ENABLE_LOCAL_TOOLS", "true").lower() == "true",
         mcp_connections=_parse_mcp_connections(),
         require_mcp_approval=os.environ.get(
             "MCP_REQUIRE_APPROVAL", "false"

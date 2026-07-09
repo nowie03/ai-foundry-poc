@@ -1,0 +1,58 @@
+name: Red Team (manual/scheduled)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Every Monday 06:00 UTC. Adjust or remove as needed.
+    - cron: "0 6 * * 1"
+
+env:
+  PROMPTFOO_VERSION: "0.121.18"
+  AZURE_ACCESS_TOKEN: ${{ secrets.AZURE_ACCESS_TOKEN }}
+  AZURE_FOUNDRY_ENDPOINT: ${{ vars.AZURE_FOUNDRY_ENDPOINT }}
+  AZURE_CHAT_MODEL_DEPLOYMENT: ${{ vars.AZURE_CHAT_MODEL_DEPLOYMENT }}
+  AZURE_EMBEDDING_MODEL_DEPLOYMENT: ${{ vars.AZURE_EMBEDDING_MODEL_DEPLOYMENT }}
+  AGENT_NAME: ${{ vars.AGENT_NAME }}
+  TOOLBOX_NAME: ${{ vars.TOOLBOX_NAME }}
+  MCP_CONNECTIONS: ${{ vars.MCP_CONNECTIONS }}
+  ENABLE_LOCAL_TOOLS: "false"
+
+jobs:
+  redteam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Deploy skills, toolbox, and agent (new version)
+        run: |
+          python scripts/sync_skills.py
+          python scripts/deploy_toolbox.py
+          python scripts/deploy_agent.py
+
+      - name: Run red team probes (report only — does not block anything)
+        run: |
+          mkdir -p results
+          npx --yes promptfoo@${{ env.PROMPTFOO_VERSION }} redteam run \
+            -c tests/promptfoo.yaml -c tests/suites/redteam.yaml \
+            -o results/redteam.json
+        continue-on-error: true
+
+      - name: Upload red team report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-report
+          path: results/redteam.json
+          if-no-files-found: ignore

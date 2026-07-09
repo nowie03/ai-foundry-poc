@@ -12,6 +12,12 @@ npm install -g promptfoo
 # The provider.py shim reads HarnessConfig from environment variables.
 ```
 
+promptfoo auto-detects the Python interpreter (`sys.executable`/`python3`) that runs
+`provider.py`. If you need a specific interpreter (e.g. a non-default venv), set
+`PROMPTFOO_PYTHON` in your own shell profile — do not add it to `tests/promptfoo.yaml`'s
+`env:` block, since that overrides real process env for every machine that runs it,
+including CI.
+
 ## Directory Structure
 
 ```
@@ -84,6 +90,15 @@ npx promptfoo redteam run -c tests/promptfoo.yaml -c tests/suites/redteam.yaml
 | `tool_use` | 6 | Does it invoke web search / MCP? | ~8 min |
 | `multi_turn` | 6 | Does it maintain conversation context? | ~6 min |
 | `redteam` | ~80 (auto) | Safety and adversarial robustness | ~30–60 min |
+
+## CI
+
+`smoke` / `skills` / `tool_use` / `multi_turn` run automatically in
+`.github/workflows/deploy.yml` on every push to `main`, gating the deploy
+(smoke must be 100%, the rest ≥80% — see [`docs/deployment.md`](../docs/deployment.md#cicd)).
+`redteam` is **not** run there — it's manual/scheduled only, via
+`.github/workflows/redteam.yml` (`workflow_dispatch` or weekly cron), and never
+blocks a deploy.
 
 ## Multi-Turn Design
 

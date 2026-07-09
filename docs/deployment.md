@@ -156,3 +156,69 @@ When updating the agent after changes:
 | `BASE_INSTRUCTIONS` or tool list | `delete_agent.py` → `deploy_agent.py` |
 | `LOCAL_MCP_URL` (new ngrok URL) | `deploy_agent.py` (new agent version with updated URL) |
 | `local_mcp/server.py` tool logic | Restart `python -m local_mcp.server` — no Foundry redeploy needed |
+
+---
+
+## CI/CD
+
+`.github/workflows/deploy.yml` runs on every push to `main`: it deploys skills →
+toolbox → agent (dev environment), then gates on the fast promptfoo suites
+(smoke first — must be 100% — then skills/tool_use/multi_turn at ≥80%). Any
+failure triggers `scripts/delete_agent.py` as a best-effort rollback of the
+version just created, and the job fails. `.github/workflows/redteam.yml` runs
+the ~30-60 min red-team suite separately, via `workflow_dispatch` or a weekly
+schedule — it never blocks deploys, it only produces a report artifact.
+
+### Auth: static token, not a service principal
+
+GitHub Actions can't use the usual `DefaultAzureCredential()` path (no
+interactive `az login`), and this tenant doesn't allow creating an app
+registration or service principal for OIDC / client-secret login either. So
+`harness/auth.py::get_credential()` falls back to a hand-rolled
+`StaticTokenCredential` whenever the `AZURE_ACCESS_TOKEN` env var is set: it
+wraps a single pre-minted AAD access token and hands it back for every
+`get_token()` call, ignoring the requested scope. Locally (`AZURE_ACCESS_TOKEN`
+unset) `DefaultAzureCredential()` is used exactly as before.
+
+**Token refresh is manual.** AAD access tokens are valid for at most ~60
+minutes, and there's no service principal to mint fresh ones unattended. Before
+pushing to `main` (or whenever a run fails auth), run:
+
+```bash
+az login
+./scripts/refresh_ci_token.sh   # mints a token and sets it as the AZURE_ACCESS_TOKEN secret via gh
+```
+
+If the token has expired, `StaticTokenCredential.__init__` raises a clear
+`RuntimeError` naming the expiry time and pointing at this script, rather than
+letting a stale token reach Azure and fail as an opaque 401.
+
+### local-tools is disabled in CI
+
+CI sets `ENABLE_LOCAL_TOOLS=false`, so CI-deployed agents omit the `local-tools`
+`MCPTool` — `local_mcp/server.py` is only reachable via an ngrok tunnel from a
+dev machine (see [`pitfalls.md — Bug 1`](pitfalls.md#bug-1-fastmcp-421-misdirected-request-from-ngrok)),
+which a GitHub runner doesn't have. `tests/suites/tool_use.yaml`'s one
+file-read test that depends on local-tools is expected to fail under CI; the
+suite's existing ≥80% pass threshold (5/6) already tolerates this.
+
+### Rollback is best-effort, not blue/green
+
+`scripts/deploy_agent.py` always creates a brand-new agent version; there's no
+version-promotion or traffic-splitting API in this SDK, so a bad version is
+potentially live for real traffic the instant `create_version()` returns —
+before the eval gate can react. On failure the pipeline calls
+`scripts/delete_agent.py` to remove that version, but there is an unavoidable
+exposure window between deploy and rollback. Accepted as a residual risk given
+the constraints (no blue/green infra, no version-promotion API).
+
+### Required repo secrets/variables
+
+| Name | Kind | Purpose |
+|---|---|---|
+| `AZURE_ACCESS_TOKEN` | secret | Static AAD token (see above) — refresh via `scripts/refresh_ci_token.sh` |
+| `AZURE_FOUNDRY_ENDPOINT` | variable | Same as `.env` |
+| `AZURE_CHAT_MODEL_DEPLOYMENT` | variable | Same as `.env` |
+| `AZURE_EMBEDDING_MODEL_DEPLOYMENT` | variable | Same as `.env` |
+| `AGENT_NAME` / `TOOLBOX_NAME` | variable | Same as `.env` |
+| `MCP_CONNECTIONS` | variable | Same as `.env` (optional, JSON) |

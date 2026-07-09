@@ -1,15 +1,14 @@
 from azure.ai.projects import AIProjectClient
-# pyrefly: ignore [missing-import]
-from azure.identity import DefaultAzureCredential
 from openai import OpenAI
 
+from .auth import get_credential
 from .config import HarnessConfig
 
 
 def build_client(config: HarnessConfig) -> AIProjectClient:
     return AIProjectClient(
         endpoint=config.endpoint,
-        credential=DefaultAzureCredential(),
+        credential=get_credential(),
         allow_preview=True,
     )
 
