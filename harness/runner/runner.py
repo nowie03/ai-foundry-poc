@@ -81,7 +81,11 @@ class AgentRunner:
         # Must use project.get_openai_client() — it configures the project-scoped base URL
         # (.../api/projects/<name>/openai/v1/) which hosts the conversations endpoint.
         # build_openai_client() points at /openai/v1 which lacks conversations support.
-        return self._project.get_openai_client()
+        client = self._project.get_openai_client()
+        # WARNING level (not INFO) so this is visible even with default logging
+        # config / no OTEL endpoint set — useful when base_url resolution goes wrong.
+        logger.warning("resolved openai client base_url=%r endpoint=%r", str(client.base_url), self._config.endpoint)
+        return client
 
     def run(
         self,
