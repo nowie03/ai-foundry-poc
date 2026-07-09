@@ -1,4 +1,7 @@
-azure-ai-projects>=1.0.0
+# Pinned exact: this harness uses preview/beta classes (ToolboxSearchPreviewTool
+# etc.) whose names change between releases (renamed to *PreviewToolboxTool in
+# 2.3.0) — a >= constraint breaks on fresh installs when a newer preview build lands.
+azure-ai-projects==2.2.0
 azure-identity>=1.19.0
 openai>=1.30.0
 mcp>=1.27.0
