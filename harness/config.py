@@ -39,9 +39,11 @@ class HarnessConfig:
 
 
 def load_config() -> HarnessConfig:
-    endpoint = os.environ.get("AZURE_FOUNDRY_ENDPOINT", "")
+    # .strip() guards against stray leading/trailing whitespace from copy-pasting
+    # into a CI secret/variable UI — otherwise it silently corrupts the URL scheme.
+    endpoint = os.environ.get("AZURE_FOUNDRY_ENDPOINT", "").strip()
     if not endpoint:
-        conn_str = os.environ.get("AZURE_FOUNDRY_CONNECTION_STRING", "")
+        conn_str = os.environ.get("AZURE_FOUNDRY_CONNECTION_STRING", "").strip()
         if not conn_str:
             raise ValueError(
                 "Set AZURE_FOUNDRY_ENDPOINT or AZURE_FOUNDRY_CONNECTION_STRING"
