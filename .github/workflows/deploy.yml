@@ -55,28 +55,28 @@ jobs:
           mkdir -p results
           npx --yes promptfoo@${{ env.PROMPTFOO_VERSION }} eval \
             -c tests/promptfoo.yaml -c tests/suites/smoke.yaml \
-            -o results/smoke.json
+            -o results/smoke.json || true
           python scripts/check_eval_results.py results/smoke.json --min-pass-rate 1.0
 
       - name: Skills suite (>= 80%)
         run: |
           npx --yes promptfoo@${{ env.PROMPTFOO_VERSION }} eval \
             -c tests/promptfoo.yaml -c tests/suites/skills.yaml \
-            -o results/skills.json
+            -o results/skills.json || true
           python scripts/check_eval_results.py results/skills.json --min-pass-rate 0.8
 
       - name: Tool use suite (>= 80% — local-tools disabled in CI, one test expected to miss)
         run: |
           npx --yes promptfoo@${{ env.PROMPTFOO_VERSION }} eval \
             -c tests/promptfoo.yaml -c tests/suites/tool_use.yaml \
-            -o results/tool_use.json
+            -o results/tool_use.json || true
           python scripts/check_eval_results.py results/tool_use.json --min-pass-rate 0.8
 
       - name: Multi-turn suite (>= 80%)
         run: |
           npx --yes promptfoo@${{ env.PROMPTFOO_VERSION }} eval \
             -c tests/promptfoo.yaml -c tests/suites/multi_turn.yaml \
-            -o results/multi_turn.json
+            -o results/multi_turn.json || true
           python scripts/check_eval_results.py results/multi_turn.json --min-pass-rate 0.8
 
       - name: Roll back on failure (delete the bad agent version)
