@@ -222,3 +222,17 @@ the constraints (no blue/green infra, no version-promotion API).
 | `AZURE_EMBEDDING_MODEL_DEPLOYMENT` | variable | Same as `.env` |
 | `AGENT_NAME` / `TOOLBOX_NAME` | variable | Same as `.env` |
 | `MCP_CONNECTIONS` | variable | Same as `.env` (optional, JSON) |
+| `AZURE_OPENAI_API_KEY` | secret | Azure OpenAI resource key — used by promptfoo as its `llm-rubric` grading provider (see below), not by the harness itself |
+| `AZURE_API_HOST` | variable | Bare host of the Azure OpenAI resource, e.g. `myresource.openai.azure.com` (no scheme) |
+| `AZURE_DEPLOYMENT_NAME` / `AZURE_OPENAI_DEPLOYMENT_NAME` | variable | Same chat deployment name as `AZURE_CHAT_MODEL_DEPLOYMENT` — promptfoo requires both set to auto-select Azure OpenAI as its grader |
+| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME` | variable | Same as `AZURE_EMBEDDING_MODEL_DEPLOYMENT` (optional — falls back to the chat deployment name) |
+
+### Grading provider for `llm-rubric` assertions
+
+Most suites use promptfoo's `llm-rubric` assertion type, which needs a real LLM
+to grade responses — by default that means `OPENAI_API_KEY`, a real
+OpenAI.com account unrelated to Azure. Since Azure OpenAI credentials already
+exist for this project, the variables/secret above make promptfoo
+auto-select Azure OpenAI as its grading provider instead (see
+`getDefaultProviderPreferences` in promptfoo's source) — no separate
+OpenAI.com account needed.

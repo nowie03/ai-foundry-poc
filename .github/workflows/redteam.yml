@@ -16,6 +16,13 @@ env:
   TOOLBOX_NAME: ${{ vars.TOOLBOX_NAME }}
   MCP_CONNECTIONS: ${{ vars.MCP_CONNECTIONS }}
   ENABLE_LOCAL_TOOLS: "false"
+  # Promptfoo's llm-rubric grading provider: prefers Azure OpenAI over OPENAI_API_KEY
+  # when these are set (see getDefaultProviderPreferences in promptfoo's source).
+  AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+  AZURE_API_HOST: ${{ vars.AZURE_API_HOST }}
+  AZURE_DEPLOYMENT_NAME: ${{ vars.AZURE_DEPLOYMENT_NAME }}
+  AZURE_OPENAI_DEPLOYMENT_NAME: ${{ vars.AZURE_OPENAI_DEPLOYMENT_NAME }}
+  AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME: ${{ vars.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME }}
 
 jobs:
   redteam:

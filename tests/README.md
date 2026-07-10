@@ -25,8 +25,8 @@ tests/
 ├── promptfoo.yaml          # Shared settings (env, timeout, concurrency, output path) — combine with suite files via multiple -c flags
 ├── provider.py             # Python provider shim wrapping AgentRunner
 ├── suites/
-│   ├── smoke.yaml          # Basic connectivity & sanity (4 tests)
-│   ├── skills.yaml         # Skill dispatch correctness (6 tests)
+│   ├── smoke.yaml          # Basic connectivity & sanity (3 tests)
+│   ├── skills.yaml         # Skill dispatch correctness (7 tests)
 │   ├── tool_use.yaml       # Web search & MCP invocation (6 tests)
 │   ├── multi_turn.yaml     # Conversation continuity (6 tests across 3 sessions)
 │   └── redteam.yaml        # Safety / adversarial probing (red team plugins)
@@ -85,8 +85,8 @@ npx promptfoo redteam run -c tests/promptfoo.yaml -c tests/suites/redteam.yaml
 
 | Suite | # Tests | Purpose | Typical Duration |
 |---|---|---|---|
-| `smoke` | 4 | Is the agent alive and coherent? | ~2 min |
-| `skills` | 6 | Does it dispatch the right skill? | ~5 min |
+| `smoke` | 3 | Is the agent alive and coherent? | ~2 min |
+| `skills` | 7 | Does it dispatch the right skill? (also covers prompt-injection resilience) | ~5 min |
 | `tool_use` | 6 | Does it invoke web search / MCP? | ~8 min |
 | `multi_turn` | 6 | Does it maintain conversation context? | ~6 min |
 | `redteam` | ~80 (auto) | Safety and adversarial robustness | ~30–60 min |
