@@ -38,12 +38,18 @@ class HarnessConfig:
     otel_log_level: str = "INFO"
 
 
+def _env(key: str, default: str = "") -> str:
+    """os.environ.get(key, default), but also falls back to default when the
+    var is set to an empty/whitespace string — e.g. an unset GitHub Actions
+    repo variable referenced via ${{ vars.X }} comes through as "", not absent."""
+    value = os.environ.get(key, "").strip()
+    return value or default
+
+
 def load_config() -> HarnessConfig:
-    # .strip() guards against stray leading/trailing whitespace from copy-pasting
-    # into a CI secret/variable UI — otherwise it silently corrupts the URL scheme.
-    endpoint = os.environ.get("AZURE_FOUNDRY_ENDPOINT", "").strip()
+    endpoint = _env("AZURE_FOUNDRY_ENDPOINT")
     if not endpoint:
-        conn_str = os.environ.get("AZURE_FOUNDRY_CONNECTION_STRING", "").strip()
+        conn_str = _env("AZURE_FOUNDRY_CONNECTION_STRING")
         if not conn_str:
             raise ValueError(
                 "Set AZURE_FOUNDRY_ENDPOINT or AZURE_FOUNDRY_CONNECTION_STRING"
@@ -57,25 +63,23 @@ def load_config() -> HarnessConfig:
 
     return HarnessConfig(
         endpoint=endpoint,
-        model_deployment=os.environ.get("AZURE_CHAT_MODEL_DEPLOYMENT", "gpt-5.4-mini"),
-        embedding_model_deployment=os.environ.get("AZURE_EMBEDDING_MODEL_DEPLOYMENT", "text-embedding-3-small"),
-        api_key=os.environ.get("AZURE_OPENAI_API_KEY") or None,
-        azure_openai_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT") or None,
-        api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview"),
-        agent_name=os.environ.get("AGENT_NAME", "foundry-harness"),
-        toolbox_name=os.environ.get("TOOLBOX_NAME", "harness-toolbox"),
-        skills_dir=os.environ.get("SKILLS_DIR", "skills"),
-        local_mcp_url=os.environ.get("LOCAL_MCP_URL", "http://127.0.0.1:8765"),
-        enable_local_tools=os.environ.get("ENABLE_LOCAL_TOOLS", "true").lower() == "true",
+        model_deployment=_env("AZURE_CHAT_MODEL_DEPLOYMENT", "gpt-5.4-mini"),
+        embedding_model_deployment=_env("AZURE_EMBEDDING_MODEL_DEPLOYMENT", "text-embedding-3-small"),
+        api_key=_env("AZURE_OPENAI_API_KEY") or None,
+        azure_openai_endpoint=_env("AZURE_OPENAI_ENDPOINT") or None,
+        api_version=_env("AZURE_OPENAI_API_VERSION", "2025-04-01-preview"),
+        agent_name=_env("AGENT_NAME", "foundry-harness"),
+        toolbox_name=_env("TOOLBOX_NAME", "harness-toolbox"),
+        skills_dir=_env("SKILLS_DIR", "skills"),
+        local_mcp_url=_env("LOCAL_MCP_URL", "http://127.0.0.1:8765"),
+        enable_local_tools=_env("ENABLE_LOCAL_TOOLS", "true").lower() == "true",
         mcp_connections=_parse_mcp_connections(),
-        require_mcp_approval=os.environ.get(
-            "MCP_REQUIRE_APPROVAL", "false"
-        ).lower() == "true",
-        otel_endpoint=os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or None,
-        otel_service_name=os.environ.get("OTEL_SERVICE_NAME", "foundry-harness"),
-        otel_content_recording=os.environ.get("OTEL_CAPTURE_CONTENT", "false").lower() == "true",
-        otel_bearer_token=os.environ.get("OTEL_EXPORTER_OTLP_BEARER_TOKEN") or None,
-        otel_log_level=os.environ.get("OTEL_LOG_LEVEL", "INFO").upper(),
+        require_mcp_approval=_env("MCP_REQUIRE_APPROVAL", "false").lower() == "true",
+        otel_endpoint=_env("OTEL_EXPORTER_OTLP_ENDPOINT") or None,
+        otel_service_name=_env("OTEL_SERVICE_NAME", "foundry-harness"),
+        otel_content_recording=_env("OTEL_CAPTURE_CONTENT", "false").lower() == "true",
+        otel_bearer_token=_env("OTEL_EXPORTER_OTLP_BEARER_TOKEN") or None,
+        otel_log_level=_env("OTEL_LOG_LEVEL", "INFO").upper(),
     )
 
 
