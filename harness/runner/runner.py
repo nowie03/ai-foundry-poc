@@ -41,6 +41,7 @@ class AgentRunner:
             "deploying agent: name=%r model=%s endpoint=%s",
             self._config.agent_name, self._config.model_deployment, self._config.endpoint,
         )
+        self._memory_store.create_if_not_exist()
         tools = [
             self._memory_store.get_memory_search_tool(),
             WebSearchTool(),
